@@ -23,7 +23,7 @@ debug_mode=0 # 1 = true, 0 = false, adds more logging & lets you edit vars to te
 install_parent_path="/home"
 cf_email=""
 cf_apikey=""
-cf_zoneid=""
+cf_zoneids=("" "")
 upper_cpu_limit=35 # 10 = 10% load, 20 = 20% load.  Total load, taking into account # of cores
 lower_cpu_limit=5
 regular_status=$SL_HIGH
@@ -77,29 +77,33 @@ uninstall() {
 }
 
 disable_uam() {
-  curl -X PATCH "https://api.cloudflare.com/client/v4/zones/$cf_zoneid/settings/security_level" \
-    -H "X-Auth-Email: $cf_email" \
-    -H "X-Auth-Key: $cf_apikey" \
-    -H "Content-Type: application/json" \
-    --data "{\"value\":\"$regular_status_s\"}" &>/dev/null
+    for cf_zoneid in "${cf_zoneids[@]}"; do
+      curl -X PATCH "https://api.cloudflare.com/client/v4/zones/$cf_zoneid/settings/security_level" \
+        -H "X-Auth-Email: $cf_email" \
+        -H "X-Auth-Key: $cf_apikey" \
+        -H "Content-Type: application/json" \
+        --data "{\"value\":\"$regular_status_s\"}" &>/dev/null
 
-  # log time
-  date +%s >$install_parent_path"/cfautouam/uamdisabledtime"
+      # log time
+      date +%s >$install_parent_path"/cfautouam/uamdisabledtime"
 
-  echo "$(date) - cfautouam - CPU Load: $curr_load - Disabled UAM" >>$install_parent_path"/cfautouam/cfautouam.log"
+      echo "$(date) - cfautouam - CPU Load: $curr_load - Disabled UAM" >>$install_parent_path"/cfautouam/cfautouam.log"
+    done
 }
 
 enable_uam() {
-  curl -X PATCH "https://api.cloudflare.com/client/v4/zones/$cf_zoneid/settings/security_level" \
-    -H "X-Auth-Email: $cf_email" \
-    -H "X-Auth-Key: $cf_apikey" \
-    -H "Content-Type: application/json" \
-    --data '{"value":"under_attack"}' &>/dev/null
+    for cf_zoneid in "${cf_zoneids[@]}"; do
+      curl -X PATCH "https://api.cloudflare.com/client/v4/zones/$cf_zoneid/settings/security_level" \
+        -H "X-Auth-Email: $cf_email" \
+        -H "X-Auth-Key: $cf_apikey" \
+        -H "Content-Type: application/json" \
+        --data '{"value":"under_attack"}' &>/dev/null
 
-  # log time
-  date +%s >$install_parent_path"/cfautouam/uamenabledtime"
+      # log time
+      date +%s >$install_parent_path"/cfautouam/uamenabledtime"
 
-  echo "$(date) - cfautouam - CPU Load: $curr_load - Enabled UAM" >>$install_parent_path"/cfautouam/cfautouam.log"
+      echo "$(date) - cfautouam - CPU Load: $curr_load - Enabled UAM" >>$install_parent_path"/cfautouam/cfautouam.log"
+    done
 }
 
 get_current_load() {
@@ -109,37 +113,39 @@ get_current_load() {
 }
 
 get_security_level() {
-  curl -X GET "https://api.cloudflare.com/client/v4/zones/$cf_zoneid/settings/security_level" \
-    -H "X-Auth-Email: $cf_email" \
-    -H "X-Auth-Key: $cf_apikey" \
-    -H "Content-Type: application/json" 2>/dev/null |
-    awk -F":" '{ print $4 }' | awk -F',' '{ print $1 }' | tr -d '"' >$install_parent_path"/cfautouam/cfstatus"
+  for cf_zoneid in "${cf_zoneids[@]}"; do
+    curl -X GET "https://api.cloudflare.com/client/v4/zones/$cf_zoneid/settings/security_level" \
+      -H "X-Auth-Email: $cf_email" \
+      -H "X-Auth-Key: $cf_apikey" \
+      -H "Content-Type: application/json" 2>/dev/null |
+      awk -F":" '{ print $4 }' | awk -F',' '{ print $1 }' | tr -d '"' >$install_parent_path"/cfautouam/cfstatus"
 
-  security_level=$(cat $install_parent_path"/cfautouam/cfstatus")
+    security_level=$(cat $install_parent_path"/cfautouam/cfstatus")
 
-  case $security_level in
-  "off")
-    return $SL_OFF
-    ;;
-  "essentially_off")
-    return $SL_ESSENTIALLY_OFF
-    ;;
-  "low")
-    return $SL_LOW
-    ;;
-  "medium")
-    return $SL_MEDIUM
-    ;;
-  "high")
-    return $SL_HIGH
-    ;;
-  "under_attack")
-    return $SL_UNDER_ATTACK
-    ;;
-  *)
-    return 100 # error
-    ;;
-  esac
+    case $security_level in
+    "off")
+      return $SL_OFF
+      ;;
+    "essentially_off")
+      return $SL_ESSENTIALLY_OFF
+      ;;
+    "low")
+      return $SL_LOW
+      ;;
+    "medium")
+      return $SL_MEDIUM
+      ;;
+    "high")
+      return $SL_HIGH
+      ;;
+    "under_attack")
+      return $SL_UNDER_ATTACK
+      ;;
+    *)
+      return 100 # error
+      ;;
+    esac
+  done
 }
 
 main() {
