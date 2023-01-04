@@ -1,3 +1,6 @@
+## About this fork
+This fork adds the ability to manage multiple Cloudflare zones (websites) with the script. Previously, the script could only manage one zone at a time, but now it can disable and enable Under Attack Mode for any number of zones at once. To do this, I replaced the single cf_zoneid variable with an array of cf_zoneids, and modified the disable_uam and enable_uam functions to loop through the cf_zoneids array and apply the desired action to each cf_zoneid. This allows the script to be used more flexibly and efficiently for managing multiple Cloudflare zones. Keep in mind this only works as long as the domains (zone id's) are under the same Cloudflare account. This fork does NOT support the usage of multiple cloudflare accounts (yet?).
+
 # cfautouam - CloudFlare Under Attack Mode Automation
 
 [![](https://img.youtube.com/vi/gVRgeELT2JU/0.jpg)](https://youtu.be/gVRgeELT2JU)
