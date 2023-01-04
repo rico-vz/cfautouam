@@ -42,8 +42,6 @@ After confirming it works, set debug level to 0.
 ```
 -install        : installs and enables service
 -uninstall      : uninstalls and then deletes the sub folder
--disable_script : temporarily disables the service from running
--enable_script  : re-enables the service
 -enable_uam     : enables Under Attack Mode manually
 -disable_uam    : disables Under Attack Mode manually
 ```
